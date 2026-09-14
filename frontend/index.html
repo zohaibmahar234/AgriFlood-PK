@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AgriFlood-PK</title>
+  <meta name="description" content="Flood detection, agricultural exposure and crop recovery monitoring for Khairpur, Sindh.">
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="/static/styles.css?v=20260914-premium-v2">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🌱</div>
+      <div><div class="brand-title">AgriFlood-PK</div><div class="brand-sub">Resilient farms, safer communities</div></div>
+    </div>
+
+    <nav class="side-nav" aria-label="Primary">
+      <button class="side-link active" data-view="dashboard"><span>▦</span>Dashboard</button>
+      <button class="side-link" data-view="flood"><span>🗺</span>Flood Risk Map</button>
+      <button class="side-link" data-view="crop"><span>🌿</span>Crop Monitoring</button>
+      <button class="side-link" data-view="weather"><span>☁</span>Weather & Forecast</button>
+      <button class="side-link" data-view="history"><span>↗</span>Historical Data</button>
+      <button class="side-link" data-view="reports"><span>▤</span>Reports</button>
+      <button class="side-link" data-view="alerts"><span>🔔</span>Advisories</button>
+      <button class="side-link" data-view="settings"><span>⚙</span>Settings</button>
+    </nav>
+
+    <div class="sidebar-callout">
+      <div class="leaf-icon">🌾</div>
+      <strong>Stronger Farmers<br>Safer Communities</strong>
+      <p>Data-driven insights for climate-resilient agriculture in Sindh.</p>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="mobile-brand">AgriFlood-PK</div>
+      <div class="top-spacer"></div>
+      <div class="top-pill">📍 <span>Khairpur, Sindh</span></div>
+      <div class="top-pill">📅 <span id="todayLabel">—</span></div>
+      <div class="weather-mini"><span id="weatherIcon">☁</span><b id="topTemp">—</b><small id="topWeatherText">Weather not loaded</small></div>
+      <div class="bell">🔔<span class="notif-dot" id="notifDot"></span></div>
+      <div class="avatar">ZM</div>
+    </header>
+
+    <main class="content">
+      <section class="hero-panel">
+        <div>
+          <h1>Welcome to AgriFlood-PK</h1>
+          <p>Flood risk, agricultural exposure & crop recovery monitoring</p>
+          <div class="hero-location">📍 Khairpur Mir's, Sindh, Pakistan</div>
+        </div>
+        <div class="hero-note">Smarter insights<br><span>for a safer tomorrow</span></div>
+      </section>
+
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <div class="kpi-icon blue">≋</div>
+          <div class="kpi-body"><span>Flood Risk</span><strong id="kpiRisk">Unknown</strong><small id="kpiRiskNote">Fetch current advisory</small></div>
+          <div class="kpi-badge neutral" id="riskBadge">—</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-icon green">🍃</div>
+          <div class="kpi-body"><span>Crop Health (NDVI)</span><strong id="kpiNdvi">—</strong><small>Vegetation indicator</small></div>
+          <div class="kpi-badge neutral" id="ndviBadge">GEE</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-icon amber">▧</div>
+          <div class="kpi-body"><span>Potential Crop Exposure</span><strong id="kpiCropExposure">—</strong><small>Satellite-derived when available</small></div>
+          <div class="kpi-badge neutral">km²</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-icon indigo">☔</div>
+          <div class="kpi-body"><span>Rainfall (24h)</span><strong id="kpiRain">—</strong><small>Open-Meteo forecast total</small></div>
+          <div class="kpi-badge neutral">mm</div>
+        </article>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="card map-card">
+          <div class="card-head">
+            <div><h2>Flood Risk Map</h2><p>Satellite and advisory context — Khairpur District</p></div>
+            <div class="map-tools">
+              <button class="ghost-btn">📍 Khairpur Mir's</button>
+              <button class="ghost-btn" id="fetchBtn">Refresh data</button>
+            </div>
+          </div>
+          <div class="map-wrap">
+            <div id="map"></div>
+            <div class="map-legend">
+              <strong>Flood Inundation / Risk</strong>
+              <div><span><i class="dot high"></i>High</span><span><i class="dot med"></i>Medium</span><span><i class="dot low"></i>Low</span><span><i class="dot water"></i>Observed water</span></div>
+              <small id="mapDataNote">No scientific flood raster loaded yet.</small>
+            </div>
+          </div>
+        </article>
+
+        <article class="card weather-card">
+          <div class="card-head"><div><h2>Weather & 5-Day Forecast</h2><p>Current conditions and rainfall context</p></div><button class="text-btn" id="weatherRefresh">Refresh →</button></div>
+          <div class="current-weather">
+            <div class="weather-big-icon" id="weatherBigIcon">☁</div>
+            <div><strong id="tempNow">—</strong><p id="weatherDesc">Weather not loaded</p><small>Khairpur Mir's, Sindh</small></div>
+            <div class="weather-stats"><span>Humidity <b id="humidityNow">—</b></span><span>Wind <b id="windNow">—</b></span><span>Rain (24h) <b id="rainNow">—</b></span></div>
+          </div>
+          <div class="forecast-row" id="forecastRow"><div class="forecast-empty">Click “Refresh data” to load weather.</div></div>
+        </article>
+
+        <article class="card risk-card">
+          <div class="card-head"><div><h2>Risk Summary</h2><p>Experimental advisory, not an official warning</p></div><span class="quality-pill" id="qualityPill">Insufficient data</span></div>
+          <div class="risk-summary-layout">
+            <div class="risk-donut" id="riskDonut"><div><strong id="riskDonutValue">?</strong><span>Current risk</span></div></div>
+            <div class="risk-list">
+              <div><span><i class="dot high"></i>High risk trigger</span><b id="riskHigh">—</b></div>
+              <div><span><i class="dot med"></i>Medium risk trigger</span><b id="riskMedium">—</b></div>
+              <div><span><i class="dot low"></i>Low / stable inputs</span><b id="riskLow">—</b></div>
+              <div><span><i class="dot neutral"></i>River discharge</span><b id="dischargeValue">—</b></div>
+            </div>
+          </div>
+          <div class="advisory-box" id="advisoryBox">No advisory loaded.</div>
+        </article>
+
+        <article class="card crop-card">
+          <div class="card-head"><div><h2>Crop Health (NDVI)</h2><p>Recovery indicator from Sentinel-2</p></div><button class="text-btn" id="runRecovery">Run GEE recovery →</button></div>
+          <div class="ndvi-chart" id="ndviChart">
+            <div class="chart-placeholder">Run the configured Sentinel-2 recovery job to populate real NDVI results.</div>
+          </div>
+          <div class="ndvi-stats"><span>Baseline <b id="baselineNdvi">—</b></span><span>Recovery <b id="recoveryNdvi">—</b></span><span>Change <b id="ndviChange">—</b></span></div>
+        </article>
+
+        <article class="card alerts-card">
+          <div class="card-head"><div><h2>Recent Alerts</h2><p>Location, reason, date and data quality</p></div><button class="text-btn" data-view-jump="alerts">View all →</button></div>
+          <div id="recentAlerts" class="alerts-list"><div class="empty-state">No alerts yet.</div></div>
+        </article>
+
+        <article class="card science-card">
+          <div class="card-head"><div><h2>Scientific Processing</h2><p>Real Earth Engine jobs — no synthetic scientific results</p></div><span class="quality-pill" id="geeStatus">Checking…</span></div>
+          <div class="science-actions">
+            <button class="primary-btn" id="runFlood">Run Sentinel-1 flood job</button>
+            <button class="secondary-btn" id="loadHistory">Open 2022 replay</button>
+          </div>
+          <div class="science-metrics">
+            <div><span>Flood extent</span><strong id="floodExtent">—</strong></div>
+            <div><span>Potentially affected cropland</span><strong id="cropFloodExtent">—</strong></div>
+            <div><span>Scenes used</span><strong id="sceneCount">—</strong></div>
+          </div>
+          <div id="scienceMessage" class="science-message">Earth Engine access must be configured before real satellite processing.</div>
+        </article>
+      </section>
+
+      <section class="detail-view hidden" id="detailView">
+        <div class="detail-head"><button id="backDashboard" class="secondary-btn">← Dashboard</button><h2 id="detailTitle">Details</h2></div>
+        <div id="detailContent" class="detail-content"></div>
+      </section>
+    </main>
+
+    <footer>Academic prototype · Satellite dates are observation dates, not live monitoring · Not a replacement for official flood warnings.</footer>
+  </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="/static/app.js?v=20260914-premium-v2"></script>
+</body>
+</html>

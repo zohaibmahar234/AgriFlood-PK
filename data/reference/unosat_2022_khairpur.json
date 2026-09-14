@@ -1,0 +1,56 @@
+{
+  "mode": "historical_reference",
+  "scientific_raster_included": false,
+  "event": "Pakistan Floods 2022 — Khairpur District, Sindh reference timeline",
+  "selection_reason": "Khairpur District was selected as the study area because credible 2022 UNOSAT products report satellite-detected floodwater and inundated agricultural areas in and around Khairpur, providing a defensible historical case for Sentinel-based flood and crop-recovery analysis.",
+  "observations": [
+    {
+      "date": "2022-08-15",
+      "sensor": "Sentinel-1",
+      "summary": "UNOSAT's Sindh flood assessment included Khairpur District in its district-level table of satellite-detected water extent."
+    },
+    {
+      "date": "2022-09-03",
+      "sensor": "Jilin-1 (UNOSAT supporting imagery)",
+      "summary": "UNOSAT's 9 September flood-evolution assessment showed inundated agricultural areas surrounding Khairpur city in Khairpur District."
+    },
+    {
+      "date": "2022-09-08 to 2022-09-14",
+      "sensor": "Multi-sensor UNOSAT assessment",
+      "summary": "UNOSAT continued to report extensive flooding across Sindh during mid-September; this period provides regional context but must not be treated as a single-date Khairpur ground-truth map."
+    },
+    {
+      "date": "2022-12-25 to 2022-12-31",
+      "sensor": "Multi-sensor UNOSAT weekly update",
+      "summary": "A later UNOSAT weekly assessment reported approximately 400 km² of receding floodwaters in Khairpur District, supporting a historical recession/recovery narrative rather than exact inundation-duration claims."
+    }
+  ],
+  "sources": [
+    {
+      "name": "UNOSAT Sindh flood assessment as of 15 Aug 2022 (Product 3335 PDF)",
+      "url": "https://unosat.org/static/unosat_filesystem/3335/UNOSAT_A3_Natural_Portrait_FL20220808PAK_SindhProvince_Pakistan_15Aug2022.pdf",
+      "published": "2022-08"
+    },
+    {
+      "name": "UNOSAT Preliminary satellite-derived flood evolution assessment — 9 Sep 2022",
+      "url": "https://unosat.org/static/unosat_filesystem/3350/Preliminary%20satellite-derived%20flood%20evolution%20assessment%20-%209%20September%202022.pdf",
+      "published": "2022-09-09"
+    },
+    {
+      "name": "UNOSAT Preliminary satellite-derived flood assessment — Product 3352",
+      "url": "https://unosat.org/products/3352",
+      "published": "2022-09-13"
+    },
+    {
+      "name": "UNOSAT Weekly Update — 3 Jan 2023 (25–31 Dec 2022 comparison)",
+      "url": "https://unosat.org/static/unosat_filesystem/3470/UNOSAT_Preliminary_Assessment_Report_FL20221121PAK_Pakistan_WeeklyUpdate_20230103.pdf",
+      "published": "2023-01-03"
+    }
+  ],
+  "limitations": [
+    "UNOSAT products are preliminary satellite analyses and are not equivalent to field-validated ground truth.",
+    "Some reference products are cumulative or multi-day assessments and must not be directly compared with a single Sentinel acquisition without temporal matching.",
+    "The offline replay stores verified source metadata and published context, not fabricated flood polygons.",
+    "Khairpur city and Khairpur District are distinct spatial concepts; the project uses Khairpur District as the primary study area and Khairpur Mir's as the city reference point."
+  ]
+}
