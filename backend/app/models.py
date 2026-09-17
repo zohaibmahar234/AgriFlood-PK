@@ -42,13 +42,14 @@ class AlertOut(AlertCreate):
     active: bool
 
 class FloodJobRequest(BaseModel):
-    district: str = 'Khairpur'
+    district: str = 'Khairpur District'
     before_start: date
     before_end: date
     after_start: date
     after_end: date
-    orbit_pass: Literal['ASCENDING','DESCENDING'] = 'DESCENDING'
-    polarization: Literal['VV','VH'] = 'VH'
+    orbit_pass: Literal['ASCENDING', 'DESCENDING'] = 'ASCENDING'
+    relative_orbit: int = 144
+    polarization: Literal['VV', 'VH'] = 'VH'
 
 class RecoveryJobRequest(BaseModel):
     district: str = 'Khairpur'

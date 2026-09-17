@@ -78,7 +78,7 @@ loadAlerts();
 
 $('#runFlood').onclick=async()=>{
   const btn=$('#runFlood'); btn.disabled=true; btn.textContent='Running Sentinel-1…'; $('#scienceMessage').textContent='Processing Earth Engine request…';
-  try{const d=await j(api+'/jobs/flood',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({district:'Khairpur',before_start:'2022-06-01',before_end:'2022-07-15',after_start:'2022-08-25',after_end:'2022-09-03',orbit_pass:'DESCENDING',polarization:'VH'})}); latestFlood=d; renderFlood(d); renderKpis();}
+  try{const d=await j(api+'/jobs/flood',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({district:'Khairpur District',before_start:'2022-05-01',before_end:'2022-07-01',after_start:'2022-08-01',after_end:'2022-09-30',orbit_pass:'ASCENDING',relative_orbit:144,polarization:'VH'})}); latestFlood=d; renderFlood(d); renderKpis();}
   catch(e){$('#scienceMessage').textContent=e.message;}
   finally{btn.disabled=false; btn.textContent='Run Sentinel-1 flood job';}
 };
@@ -174,3 +174,4 @@ navigateTo(['dashboard','flood','crop','weather','history','reports','alerts','s
 function escapeHtml(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
 loadWeatherAndAdvisory();
+
