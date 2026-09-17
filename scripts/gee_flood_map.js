@@ -1,25 +1,247 @@
-// AgriFlood-PK feasibility script — paste into the Google Earth Engine Code Editor.
-// Requires a registered/verified noncommercial Earth Engine project.
-var studyArea = ee.FeatureCollection('FAO/GAUL/2015/level2')
-  .filter(ee.Filter.eq('ADM0_NAME','Pakistan')).filter(ee.Filter.eq('ADM2_NAME','Khairpur'));
-Map.centerObject(studyArea, 8); Map.addLayer(studyArea, {color:'yellow'}, 'Khairpur District boundary');
-function s1(start,end){return ee.ImageCollection('COPERNICUS/S1_GRD').filterBounds(studyArea)
-  .filterDate(start,end).filter(ee.Filter.eq('instrumentMode','IW'))
-  .filter(ee.Filter.eq('orbitProperties_pass','DESCENDING'))
-  .filter(ee.Filter.listContains('transmitterReceiverPolarisation','VH')).select('VH');}
-var before=s1('2022-06-01','2022-07-15'), after=s1('2022-08-25','2022-09-03');
-print('Before scenes',before.size(),'After scenes',after.size());
-var b=before.median(), a=after.median();
-var candidate=a.lt(-18).and(a.subtract(b).lt(-3));
-var perm=ee.Image('JRC/GSW1_4/GlobalSurfaceWater').select('occurrence').gte(80);
-var slope=ee.Terrain.slope(ee.Image('USGS/SRTMGL1_003')).lte(5);
-var flood=candidate.and(perm.not()).and(slope).selfMask().clip(studyArea);
-var crop=ee.ImageCollection('ESA/WorldCover/v200').first().select('Map').eq(40);
-var cropFlood=flood.and(crop).selfMask();
-Map.addLayer(b,{min:-25,max:0},'Before VH'); Map.addLayer(a,{min:-25,max:0},'After VH');
-Map.addLayer(flood,{palette:['00FFFF']},'Experimental flood candidate');
-Map.addLayer(cropFlood,{palette:['FF00FF']},'Potentially affected cropland');
-var area=ee.Image.pixelArea();
-print('Flood candidate km2', area.updateMask(flood).reduceRegion({reducer:ee.Reducer.sum(),geometry:studyArea,scale:10,maxPixels:1e10}).getNumber('area').divide(1e6));
-print('Potentially affected cropland km2', area.updateMask(cropFlood).reduceRegion({reducer:ee.Reducer.sum(),geometry:studyArea,scale:10,maxPixels:1e10}).getNumber('area').divide(1e6));
-// IMPORTANT: thresholds are an unvalidated baseline; tune/validate against time-matched reference before scientific claims.
+// ============================================================
+// AgriFlood-PK
+// Sentinel-1 Flood Detection & Agricultural Exposure
+// Study Area: Khairpur District, Sindh, Pakistan
+// Historical Event: 2022 Flood
+// ============================================================
+
+
+// ------------------------------------------------------------
+// 1. STUDY AREA — KHAIRPUR DISTRICT
+// ------------------------------------------------------------
+
+var districts = ee.FeatureCollection('FAO/GAUL/2015/level2');
+
+var khairpur = districts
+  .filter(ee.Filter.eq('ADM0_NAME', 'Pakistan'))
+  .filter(ee.Filter.eq('ADM2_NAME', 'Khairpur District'));
+
+print('Khairpur feature count:', khairpur.size());
+
+Map.centerObject(khairpur, 9);
+Map.addLayer(
+  khairpur,
+  {color: 'yellow'},
+  'Khairpur District Boundary'
+);
+
+
+// ------------------------------------------------------------
+// 2. SENTINEL-1 BASE COLLECTION
+// ------------------------------------------------------------
+
+var s1 = ee.ImageCollection('COPERNICUS/S1_GRD')
+  .filterBounds(khairpur)
+  .filter(ee.Filter.eq('instrumentMode', 'IW'))
+  .filter(
+    ee.Filter.listContains(
+      'transmitterReceiverPolarisation',
+      'VV'
+    )
+  )
+  .filter(
+    ee.Filter.listContains(
+      'transmitterReceiverPolarisation',
+      'VH'
+    )
+  )
+
+  // Verified during feasibility testing
+  .filter(ee.Filter.eq('orbitProperties_pass', 'ASCENDING'))
+  .filter(ee.Filter.eq('relativeOrbitNumber_start', 144));
+
+
+// ------------------------------------------------------------
+// 3. HISTORICAL WINDOWS
+// ------------------------------------------------------------
+
+var preFlood = s1.filterDate(
+  '2022-05-01',
+  '2022-07-01'
+);
+
+var floodPeriod = s1.filterDate(
+  '2022-08-01',
+  '2022-09-30'
+);
+
+print('Selected pre-flood scenes:', preFlood.size());
+print('Selected flood-period scenes:', floodPeriod.size());
+
+
+// ------------------------------------------------------------
+// 4. CREATE MEDIAN COMPOSITES
+// ------------------------------------------------------------
+
+var preVH = preFlood
+  .select('VH')
+  .median()
+  .clip(khairpur);
+
+var floodVH = floodPeriod
+  .select('VH')
+  .median()
+  .clip(khairpur);
+
+var preVV = preFlood
+  .select('VV')
+  .median()
+  .clip(khairpur);
+
+var floodVV = floodPeriod
+  .select('VV')
+  .median()
+  .clip(khairpur);
+
+
+// ------------------------------------------------------------
+// 5. VISUALIZE SENTINEL-1
+// ------------------------------------------------------------
+
+Map.addLayer(
+  preVH,
+  {min: -25, max: -5},
+  'Pre-Flood VH'
+);
+
+Map.addLayer(
+  floodVH,
+  {min: -25, max: -5},
+  'Flood-Period VH'
+);
+
+
+// ------------------------------------------------------------
+// 6. FLOOD CHANGE DETECTION
+// ------------------------------------------------------------
+
+// Difference in VH backscatter.
+// Flooded surfaces commonly show reduced radar backscatter,
+// but this threshold remains an experimental baseline.
+
+var vhChange = floodVH.subtract(preVH);
+
+var darkWater = floodVH.lt(-18);
+
+var significantDrop = vhChange.lt(-3);
+
+var floodCandidate = darkWater.and(significantDrop);
+
+
+// ------------------------------------------------------------
+// 7. REMOVE PERMANENT WATER
+// ------------------------------------------------------------
+
+var permanentWater = ee.Image(
+  'JRC/GSW1_4/GlobalSurfaceWater'
+)
+  .select('occurrence')
+  .gte(80);
+
+var noPermanentWater = floodCandidate.and(
+  permanentWater.not()
+);
+
+
+// ------------------------------------------------------------
+// 8. SLOPE FILTER
+// ------------------------------------------------------------
+
+var elevation = ee.Image('USGS/SRTMGL1_003');
+
+var slope = ee.Terrain.slope(elevation);
+
+var lowSlope = slope.lte(5);
+
+var flood = noPermanentWater
+  .and(lowSlope)
+  .selfMask()
+  .clip(khairpur);
+
+
+// ------------------------------------------------------------
+// 9. AGRICULTURAL LAND
+// ------------------------------------------------------------
+
+var worldCover = ee.ImageCollection(
+  'ESA/WorldCover/v200'
+).first();
+
+var cropland = worldCover
+  .select('Map')
+  .eq(40)
+  .clip(khairpur);
+
+var affectedCropland = flood
+  .and(cropland)
+  .selfMask();
+
+
+// ------------------------------------------------------------
+// 10. MAP RESULTS
+// ------------------------------------------------------------
+
+Map.addLayer(
+  flood,
+  {palette: ['00FFFF']},
+  'Experimental Flood Extent'
+);
+
+Map.addLayer(
+  cropland.selfMask(),
+  {palette: ['00AA00']},
+  'Cropland',
+  false
+);
+
+Map.addLayer(
+  affectedCropland,
+  {palette: ['FF00FF']},
+  'Potentially Affected Cropland'
+);
+
+
+// ------------------------------------------------------------
+// 11. AREA CALCULATIONS
+// ------------------------------------------------------------
+
+var pixelArea = ee.Image.pixelArea();
+
+var floodArea = pixelArea
+  .updateMask(flood)
+  .reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: khairpur.geometry(),
+    scale: 10,
+    maxPixels: 1e10
+  })
+  .getNumber('area')
+  .divide(1e6);
+
+var affectedCropArea = pixelArea
+  .updateMask(affectedCropland)
+  .reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: khairpur.geometry(),
+    scale: 10,
+    maxPixels: 1e10
+  })
+  .getNumber('area')
+  .divide(1e6);
+
+
+// ------------------------------------------------------------
+// 12. OUTPUT
+// ------------------------------------------------------------
+
+print('Flood extent (km²):', floodArea);
+
+print(
+  'Potentially affected cropland (km²):',
+  affectedCropArea
+);
+
+print(
+  'IMPORTANT:',
+  'Flood thresholds are an experimental baseline and require validation before scientific claims.'
+);
