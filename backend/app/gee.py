@@ -199,6 +199,14 @@ def flood_summary(req):
         .divide(1e6)
         .getInfo()
     )
+       # ---------------------------------------------------------
+    # Earth Engine map tiles for flood visualization
+    # ---------------------------------------------------------
+    flood_map = flood.selfMask().getMapId({
+        "palette": ["00FFFF"]
+    })
+
+    flood_tile_url = flood_map["tile_fetcher"].url_format
 
     # ---------------------------------------------------------
     # API response
@@ -214,6 +222,7 @@ def flood_summary(req):
         "after_scenes": after_count,
         "total_scenes": before_count + after_count,
         "flood_km2": flood_km2,
+        "flood_tile_url": flood_tile_url,
         "potentially_affected_cropland_km2": crop_km2,
         "method": (
             "Sentinel-1 backscatter change baseline with "
@@ -223,8 +232,6 @@ def flood_summary(req):
         "experimental": True,
         "validation_status": "Validation pending",
     }
-
-
 def recovery_summary(req):
     """Generate Sentinel-2 NDVI crop-recovery summary."""
 
