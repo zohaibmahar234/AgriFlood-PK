@@ -1593,9 +1593,12 @@ async function openDetail(view){
     }
 
 
-    /* FLOOD */
+        /* FLOOD */
 
     else if(view==='flood'){
+
+      const floodReady=
+        latestFlood?.status==='ok';
 
       c.innerHTML=`
 
@@ -1604,34 +1607,45 @@ async function openDetail(view){
           ${
             metric(
               'Flood extent',
-              latestFlood?.status==='ok'
+              floodReady
                 ? fmt(
                     latestFlood.flood_km2,
                     1
                   )+' km²'
-                : '—'
+                : '—',
+              'Experimental flood candidate area'
             )
           }
 
           ${
             metric(
               'Potential crop exposure',
-              latestFlood?.status==='ok'
+              floodReady
                 ? fmt(
                     latestFlood
                       .potentially_affected_cropland_km2,
                     1
                   )+' km²'
-                : '—'
+                : '—',
+              'Potentially affected cropland'
             )
           }
 
           ${
             metric(
               'Scenes used',
-              latestFlood?.status==='ok'
+              floodReady
                 ? `${latestFlood.before_scenes}+${latestFlood.after_scenes}`
-                : '—'
+                : '—',
+              floodReady
+                ? `${
+                    latestFlood.total_scenes ||
+                    (
+                      latestFlood.before_scenes +
+                      latestFlood.after_scenes
+                    )
+                  } Sentinel-1 scenes`
+                : 'Sentinel-1 scenes'
             )
           }
 
@@ -1645,17 +1659,334 @@ async function openDetail(view){
 
         </div>
 
-        <div class="report-note">
-          Flood mapping uses Sentinel-1
-          change detection with permanent-water
-          and slope filtering.
-          Results are experimental and
-          scientific validation is pending.
-        </div>
+
+        ${
+          floodReady
+            ? `
+
+              <div class="flood-detail-map-wrap">
+
+                <div id="floodDetailMap"></div>
+
+
+                <div class="flood-detail-legend">
+
+                  <strong>
+                    Sentinel-1 Flood Candidate
+                  </strong>
+
+                  <span>
+
+                    <i class="flood-color-box"></i>
+
+                    Flood candidate area
+
+                  </span>
+
+                  <small>
+
+                    Cyan pixels represent experimental
+                    Sentinel-1 flood candidate areas.
+                    They are not an official flood boundary.
+
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <div class="flood-method-grid">
+
+
+                <div class="flood-method-item">
+
+                  <span>
+                    Relative orbit
+                  </span>
+
+                  <strong>
+                    ${
+                      escapeHtml(
+                        String(
+                          latestFlood.relative_orbit ?? 144
+                        )
+                      )
+                    }
+                  </strong>
+
+                </div>
+
+
+                <div class="flood-method-item">
+
+                  <span>
+                    Orbit pass
+                  </span>
+
+                  <strong>
+                    ${
+                      escapeHtml(
+                        latestFlood.orbit_pass ||
+                        'ASCENDING'
+                      )
+                    }
+                  </strong>
+
+                </div>
+
+
+                <div class="flood-method-item">
+
+                  <span>
+                    Polarization
+                  </span>
+
+                  <strong>
+                    ${
+                      escapeHtml(
+                        latestFlood.polarization ||
+                        'VH'
+                      )
+                    }
+                  </strong>
+
+                </div>
+
+
+                <div class="flood-method-item">
+
+                  <span>
+                    Validation
+                  </span>
+
+                  <strong>
+                    ${
+                      escapeHtml(
+                        latestFlood.validation_status ||
+                        'Validation pending'
+                      )
+                    }
+                  </strong>
+
+                </div>
+
+
+              </div>
+
+
+              <div class="flood-validation-note">
+
+                <strong>
+                  Scientific status:
+                </strong>
+
+                This layer is an experimental Sentinel-1
+                flood-candidate result generated using
+                before/after backscatter change detection,
+                permanent-water masking and slope filtering.
+                Scientific validation is pending.
+
+              </div>
+
+            `
+
+            : `
+
+              <div class="report-note">
+
+                No Sentinel-1 flood result is loaded yet.
+
+                Return to the Dashboard and run the
+                Sentinel-1 flood job first.
+
+              </div>
+
+            `
+        }
+
       `;
 
-    }
 
+      /*
+       * Separate Leaflet map for Flood Risk Map
+       * detail view.
+       *
+       * This map is independent from the main
+       * Dashboard map.
+       */
+
+      if(
+        floodReady &&
+        latestFlood.flood_tile_url
+      ){
+
+        const floodDetailMap=
+          L.map(
+            'floodDetailMap',
+            {
+              zoomControl:true
+            }
+          )
+          .setView(
+            [lat,lon],
+            9
+          );
+
+
+        /*
+         * OpenStreetMap base layer
+         */
+
+        L.tileLayer(
+
+          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+          {
+
+            attribution:
+              '© OpenStreetMap contributors',
+
+            maxZoom:19
+
+          }
+
+        ).addTo(
+          floodDetailMap
+        );
+
+
+        /*
+         * Google Earth Engine
+         * Sentinel-1 flood candidate layer
+         */
+
+        const detailFloodLayer=
+          L.tileLayer(
+
+            latestFlood.flood_tile_url,
+
+            {
+
+              opacity:0.70,
+
+              maxZoom:18,
+
+              attribution:
+                'Google Earth Engine / Copernicus Sentinel-1'
+
+            }
+
+          );
+
+
+        detailFloodLayer.addTo(
+          floodDetailMap
+        );
+
+
+        /*
+         * Khairpur study point
+         */
+
+        L.circleMarker(
+
+          [lat,lon],
+
+          {
+
+            radius:6,
+
+            weight:2,
+
+            color:'#ffffff',
+
+            fillColor:'#17d07e',
+
+            fillOpacity:1
+
+          }
+
+        )
+
+        .addTo(
+          floodDetailMap
+        )
+
+        .bindPopup(
+          "Khairpur Mir's, Sindh"
+        );
+
+
+        /*
+         * Layer control
+         *
+         * Allows flood candidate layer
+         * to be shown / hidden.
+         */
+
+        L.control.layers(
+
+          {},
+
+          {
+
+            'Sentinel-1 flood candidate':
+              detailFloodLayer
+
+          },
+
+          {
+
+            collapsed:false
+
+          }
+
+        ).addTo(
+          floodDetailMap
+        );
+
+
+        /*
+         * Earth Engine tile error handling
+         */
+
+        detailFloodLayer.on(
+
+          'tileerror',
+
+          ()=>{
+
+            console.warn(
+              'Earth Engine flood detail tile failed to load.'
+            );
+
+          }
+
+        );
+
+
+        /*
+         * Leaflet sometimes calculates an
+         * incorrect map size immediately after
+         * a hidden detail page becomes visible.
+         */
+
+        setTimeout(
+
+          ()=>{
+
+            floodDetailMap.invalidateSize();
+
+          },
+
+          150
+
+        );
+
+      }
+
+    }
 
     /* HISTORY */
 

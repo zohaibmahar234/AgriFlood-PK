@@ -7,3 +7,132 @@
 @media(max-width:1180px){.app-shell{grid-template-columns:82px 1fr}.brand-title,.brand-sub,.side-link:not(.active){font-size:0}.side-link span{font-size:18px}.side-link{justify-content:center}.sidebar-callout{display:none}.brand{justify-content:center}.dashboard-grid{grid-template-columns:1fr 1fr;grid-template-areas:"map map" "weather alerts" "risk crop" "science science"}.kpi-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.app-shell{display:block}.sidebar{display:none}.topbar{height:auto;padding:10px 14px;flex-wrap:wrap}.mobile-brand{display:block;font-weight:800}.top-pill:nth-of-type(2),.weather-mini{display:none}.content{padding:12px}.hero-panel{padding:18px}.hero-note{display:none}.hero-panel h1{font-size:23px}.kpi-grid{grid-template-columns:1fr}.dashboard-grid{display:block}.card{margin-bottom:10px}.map-card{min-height:auto}#map{height:360px}.forecast-row{grid-template-columns:repeat(5,minmax(70px,1fr));overflow-x:auto}.risk-summary-layout{grid-template-columns:1fr}.science-metrics{grid-template-columns:1fr}.settings-grid{grid-template-columns:1fr}}
 .detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.detail-metric{background:linear-gradient(145deg,#0c3a3f,#082d31);border:1px solid rgba(70,211,168,.18);border-radius:10px;padding:14px}.detail-metric span{display:block;color:#8faea8;font-size:10px}.detail-metric strong{display:block;font-size:22px;margin-top:4px}.detail-metric small{display:block;color:#759992;font-size:9px;margin-top:4px}@media(max-width:900px){.detail-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.detail-grid{grid-template-columns:1fr}}
+
+/* =========================================================
+   FLOOD DETAIL MAP
+   ========================================================= */
+
+.flood-detail-map-wrap{
+  position:relative;
+  margin-top:14px;
+  border:1px solid rgba(70,211,168,.18);
+  border-radius:12px;
+  overflow:hidden;
+  background:#08272b;
+}
+
+#floodDetailMap{
+  width:100%;
+  height:520px;
+  background:#08272b;
+}
+
+.flood-detail-legend{
+  position:absolute;
+  left:16px;
+  bottom:16px;
+  z-index:500;
+  min-width:240px;
+  max-width:360px;
+  padding:12px 14px;
+  border-radius:10px;
+  border:1px solid rgba(108,211,184,.3);
+  background:rgba(4,26,31,.92);
+  backdrop-filter:blur(8px);
+}
+
+.flood-detail-legend strong{
+  display:block;
+  font-size:12px;
+  margin-bottom:8px;
+}
+
+.flood-detail-legend span{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:10px;
+  color:#d6e8e3;
+}
+
+.flood-detail-legend small{
+  display:block;
+  margin-top:8px;
+  color:#82a49d;
+  font-size:9px;
+  line-height:1.5;
+}
+
+.flood-color-box{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:3px;
+  background:#00ffff;
+  box-shadow:0 0 8px rgba(0,255,255,.45);
+}
+
+.flood-method-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+
+.flood-method-item{
+  background:#0a3438;
+  border:1px solid rgba(70,211,168,.14);
+  border-radius:9px;
+  padding:11px;
+}
+
+.flood-method-item span{
+  display:block;
+  color:#86a69f;
+  font-size:9px;
+}
+
+.flood-method-item strong{
+  display:block;
+  color:#fff;
+  margin-top:4px;
+  font-size:12px;
+}
+
+.flood-validation-note{
+  margin-top:12px;
+  padding:12px 14px;
+  border-left:3px solid #e6b84b;
+  border-radius:8px;
+  background:rgba(115,83,21,.22);
+  color:#d9cba7;
+  font-size:10px;
+  line-height:1.55;
+}
+
+@media(max-width:900px){
+  #floodDetailMap{
+    height:440px;
+  }
+
+  .flood-method-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:560px){
+  #floodDetailMap{
+    height:360px;
+  }
+
+  .flood-method-grid{
+    grid-template-columns:1fr;
+  }
+
+  .flood-detail-legend{
+    right:12px;
+    left:12px;
+    bottom:12px;
+    min-width:0;
+  }
+}
