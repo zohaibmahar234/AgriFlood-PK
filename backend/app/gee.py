@@ -199,15 +199,23 @@ def flood_summary(req):
         .divide(1e6)
         .getInfo()
     )
-       # ---------------------------------------------------------
-    # Earth Engine map tiles for flood visualization
-    # ---------------------------------------------------------
-    flood_map = flood.selfMask().getMapId({
-        "palette": ["00FFFF"]
-    })
+      # ---------------------------------------------------------
+# Earth Engine map tiles for flood and cropland exposure
+# ---------------------------------------------------------
 
+# Experimental Sentinel-1 flood candidate layer
+    flood_map = flood.selfMask().getMapId({
+    "palette": ["00FFFF"]
+})
     flood_tile_url = flood_map["tile_fetcher"].url_format
 
+# Potentially affected cropland layer
+    affected_cropland_map = affected_cropland.selfMask().getMapId({
+    "palette": ["FFD54F"]
+})
+    affected_cropland_tile_url = (
+    affected_cropland_map["tile_fetcher"].url_format
+    )
     # ---------------------------------------------------------
     # API response
     # ---------------------------------------------------------
@@ -224,6 +232,7 @@ def flood_summary(req):
         "flood_km2": flood_km2,
         "flood_tile_url": flood_tile_url,
         "potentially_affected_cropland_km2": crop_km2,
+        "affected_cropland_tile_url": affected_cropland_tile_url,
         "method": (
             "Sentinel-1 backscatter change baseline with "
             "permanent-water and <=5 degree slope filtering"

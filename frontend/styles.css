@@ -136,3 +136,12 @@
     min-width:0;
   }
 }
+
+.cropland-color-box{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:3px;
+  background:#FFD54F;
+  box-shadow:0 0 8px rgba(255,213,79,.45);
+}

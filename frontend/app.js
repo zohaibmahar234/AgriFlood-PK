@@ -22,6 +22,8 @@ const map=L.map('map',{
 
 // Earth Engine flood raster layer
 let floodLayer=null;
+let affectedCroplandLayer=null;
+let scientificLayerControl=null;
 
 L.tileLayer(
   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -851,7 +853,15 @@ function renderFlood(d){
     floodLayer=null;
 
   }
+  if(affectedCroplandLayer){
 
+  map.removeLayer(
+    affectedCroplandLayer
+  );
+
+  affectedCroplandLayer=null;
+
+}
 
   /*
    Display Sentinel-1 flood
@@ -894,7 +904,51 @@ function renderFlood(d){
 
 
     floodLayer.addTo(map);
+    /*
+ Potentially affected cropland raster
+ returned by FastAPI / Earth Engine.
+*/
+if(d.affected_cropland_tile_url){
 
+  affectedCroplandLayer =
+    L.tileLayer(
+      d.affected_cropland_tile_url,
+      {
+        opacity:0.75,
+        maxZoom:18,
+        attribution:
+          'ESA WorldCover / Google Earth Engine'
+      }
+    );
+
+  affectedCroplandLayer.on(
+    'tileerror',
+    ()=>{
+      console.warn(
+        'Earth Engine affected cropland tile failed to load.'
+      );
+    }
+  );
+
+  affectedCroplandLayer.addTo(map);
+  // Remove previous scientific layer control
+if(scientificLayerControl){
+  map.removeControl(scientificLayerControl);
+  scientificLayerControl=null;
+}
+
+// Scientific raster layer controls
+scientificLayerControl = L.control.layers(
+  {},
+  {
+    'Sentinel-1 flood candidate': floodLayer,
+    'Potentially affected cropland': affectedCroplandLayer
+  },
+  {
+    collapsed:false
+  }
+).addTo(map);
+}
 
     /*
      Focus map on
@@ -1669,30 +1723,30 @@ async function openDetail(view){
                 <div id="floodDetailMap"></div>
 
 
-                <div class="flood-detail-legend">
+               <div class="flood-detail-legend">
 
-                  <strong>
-                    Sentinel-1 Flood Candidate
-                  </strong>
+          <strong>
+            Flood & Agricultural Exposure
+          </strong>
 
-                  <span>
+          <span>
+            <i class="flood-color-box"></i>
+            Sentinel-1 flood candidate
+          </span>
 
-                    <i class="flood-color-box"></i>
+          <span>
+            <i class="cropland-color-box"></i>
+            Potentially affected cropland
+          </span>
 
-                    Flood candidate area
+          <small>
+            Cyan pixels represent experimental Sentinel-1 flood candidate areas.
+            Yellow pixels represent flood candidates overlapping ESA WorldCover
+            cropland. These layers are experimental and scientific validation
+            is pending.
+          </small>
 
-                  </span>
-
-                  <small>
-
-                    Cyan pixels represent experimental
-                    Sentinel-1 flood candidate areas.
-                    They are not an official flood boundary.
-
-                  </small>
-
-                </div>
-
+          </div>
               </div>
 
 
@@ -1878,12 +1932,28 @@ async function openDetail(view){
             }
 
           );
+        const detailAffectedCroplandLayer =
+        latestFlood.affected_cropland_tile_url
+         ? L.tileLayer(
+        latestFlood.affected_cropland_tile_url,
+        {
+          opacity:0.75,
+          maxZoom:18,
+          attribution:
+            'ESA WorldCover / Google Earth Engine'
+        }
+      )
+    : null;
 
 
         detailFloodLayer.addTo(
           floodDetailMap
         );
-
+        if(detailAffectedCroplandLayer){
+        detailAffectedCroplandLayer.addTo(
+        floodDetailMap
+      );
+    }
 
         /*
          * Khairpur study point
@@ -1924,27 +1994,21 @@ async function openDetail(view){
          * Allows flood candidate layer
          * to be shown / hidden.
          */
-
-        L.control.layers(
-
-          {},
-
-          {
-
-            'Sentinel-1 flood candidate':
-              detailFloodLayer
-
-          },
-
-          {
-
-            collapsed:false
-
-          }
-
-        ).addTo(
-          floodDetailMap
-        );
+L.control.layers(
+  {},
+  {
+    'Sentinel-1 flood candidate': detailFloodLayer,
+    ...(detailAffectedCroplandLayer
+      ? {
+          'Potentially affected cropland':
+            detailAffectedCroplandLayer
+        }
+      : {})
+  },
+  {
+    collapsed:false
+  }
+).addTo(floodDetailMap);
 
 
         /*
