@@ -16,9 +16,23 @@ def test_alert_upsert_prevents_duplicate_key():
     assert a.status_code==200 and b.status_code==200
     rows=client.get('/api/alerts').json(); assert len([x for x in rows if x['key']=='khairpur-demo'])==1
 
-def test_gee_blocker_is_explicit():
-    p={'district':'Khairpur','before_start':'2022-06-01','before_end':'2022-07-15','after_start':'2022-08-25','after_end':'2022-09-03'}
-    r=client.post('/api/jobs/flood',json=p); assert r.status_code==503; assert 'not configured' in r.text
+def test_gee_blocker_is_explicit(monkeypatch):
+    from backend.app.config import settings
+
+    monkeypatch.setattr(settings, "gee_enabled", False)
+
+    p = {
+        "district": "Khairpur",
+        "before_start": "2022-06-01",
+        "before_end": "2022-07-15",
+        "after_start": "2022-08-25",
+        "after_end": "2022-09-03",
+    }
+
+    r = client.post("/api/jobs/flood", json=p)
+
+    assert r.status_code == 503
+    assert "not configured" in r.text
 
 def test_frontend_is_served():
     r=client.get('/')
