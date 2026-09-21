@@ -83,3 +83,21 @@ The ML output must remain separate from:
 - Potentially affected cropland
 - Sentinel-2 vegetation-change/recovery indicators
 - Official flood or agricultural-damage assessments
+
+
+## External Agricultural-Damage Reference
+
+Official 2022 flood-impact reporting for Khairpur District may be used as an external district-level reference for contextual validation.
+
+PDMA Sindh reported district-level cropped area and affected crop-area statistics for Khairpur during the 2022 flood emergency. These statistics provide useful evidence that substantial agricultural impacts occurred within the district.
+
+However, district-level totals do not identify which individual pixels or ML samples experienced Low, Moderate, or Severe agricultural impact.
+
+Therefore:
+
+- PDMA district totals will not be converted directly into `impact_class` training labels.
+- They may be used for district-level contextual comparison and validation.
+- Pixel/sample-level training labels require an independent spatial reference or a documented expert/reference-sampling methodology.
+- Flood-candidate and non-flood sampling groups remain predictor/sampling information, not agricultural-impact ground truth.
+
+This separation prevents circular labels and unsupported crop-damage claims.

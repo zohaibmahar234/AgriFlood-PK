@@ -1,0 +1,42 @@
+{
+  "mode": "historical_reference",
+  "reference_type": "district_level_agricultural_damage_statistics",
+  "scientific_raster_included": false,
+  "pixel_level_ground_truth": false,
+  "ml_training_labels_included": false,
+  "event": "Pakistan Floods 2022 - Khairpur District, Sindh agricultural impact reference",
+  "district": "Khairpur District",
+  "province": "Sindh",
+  "country": "Pakistan",
+  "reference_date": "2022-10-24",
+  "reported_statistics": {
+    "total_cropped_area_acres": 384082,
+    "affected_crop_area_acres": 356582,
+    "unit": "acres"
+  },
+  "source": {
+  "organization": "Provincial Disaster Management Authority (PDMA) Sindh",
+  "document": "Damaged Crop Area - Province Status 24-10-2022",
+  "published_date": "2022-10-24",
+  "assessment_status": "preliminary",
+  "source_url": "https://pdma.gos.pk/Documents/Flood/Flood_2022/Flood%20Inundation%20GIS%20Maps/Damaged%20Crop%20Area-Province%20Status%2024-10-2022.pdf",
+  "source_type": "official_district_level_damage_assessment"
+  },
+  "intended_use": [
+    "Historical agricultural-impact context for the 2022 Khairpur flood event",
+    "District-level contextual comparison with AgriFlood-PK outputs",
+    "Supporting provenance for agricultural-impact research"
+  ],
+  "not_intended_use": [
+    "Pixel-level crop-damage ground truth",
+    "Automatic generation of impact_class labels",
+    "Direct supervision of Low, Moderate, or Severe ML classes",
+    "Proof that an individual sampled location experienced crop damage"
+  ],
+  "ml_label_policy": {
+    "usable_as_direct_training_ground_truth": false,
+    "reason": "District-level affected-area totals do not provide spatially explicit damage severity for individual pixels or samples.",
+    "required_for_training": "Independent spatial reference data or a documented reference-sampling and expert-label methodology."
+  },
+  "scientific_note": "The statistics are preserved as an external district-level historical reference. They must remain separate from Sentinel-1 flood candidates, Sentinel-2 vegetation change, and future ML predictions."
+}
