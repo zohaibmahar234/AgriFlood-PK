@@ -1014,17 +1014,20 @@ $('#runRecovery').onclick=async()=>{
             district:
               'Khairpur',
 
+                        district:
+              'Khairpur District',
+
             baseline_start:
-              '2021-08-15',
+              '2022-05-01',
 
             baseline_end:
-              '2021-10-15',
+              '2022-07-01',
 
             recovery_start:
-              '2022-10-15',
+              '2022-10-01',
 
             recovery_end:
-              '2022-12-15',
+              '2022-12-31',
 
             cloud_probability_max:
               40
@@ -1577,9 +1580,12 @@ async function openDetail(view){
     }
 
 
-    /* CROP */
+        /* CROP / VEGETATION RECOVERY */
 
     else if(view==='crop'){
+
+      const recoveryReady=
+        latestRecovery?.status==='ok';
 
       c.innerHTML=`
 
@@ -1588,61 +1594,346 @@ async function openDetail(view){
           ${
             metric(
               'Baseline NDVI',
-              latestRecovery?.status==='ok'
-                ? fmt(
-                    latestRecovery.baseline_ndvi,
-                    3
-                  )
-                : '—'
+              recoveryReady
+                ? fmt(latestRecovery.baseline_ndvi,3)
+                : '—',
+              'Selected baseline vegetation period'
             )
           }
 
           ${
             metric(
               'Recovery NDVI',
-              latestRecovery?.status==='ok'
-                ? fmt(
-                    latestRecovery.recovery_ndvi,
-                    3
-                  )
-                : '—'
+              recoveryReady
+                ? fmt(latestRecovery.recovery_ndvi,3)
+                : '—',
+              'Selected post-flood vegetation period'
             )
           }
 
           ${
             metric(
               'NDVI change',
-              latestRecovery?.status==='ok'
-                ? (
-                    latestRecovery.ndvi_change>=0
-                      ? '+'
-                      : ''
-                  )+
-                  fmt(
-                    latestRecovery.ndvi_change,
-                    3
-                  )
-                : '—'
+              recoveryReady
+                ? (latestRecovery.ndvi_change>=0?'+':'')+
+                  fmt(latestRecovery.ndvi_change,3)
+                : '—',
+              'Recovery NDVI − baseline NDVI'
             )
           }
 
           ${
             metric(
-              'Data source',
-              'Sentinel-2',
-              'Cloud-screened observations'
+              'Scenes used',
+              recoveryReady
+                ? `${latestRecovery.baseline_scenes}+${latestRecovery.recovery_scenes}`
+                : '—',
+              'Sentinel-2 observations'
             )
           }
 
         </div>
 
-        <div class="report-note">
-          Crop monitoring uses Sentinel-2 NDVI
-          as a vegetation recovery indicator.
-          Configure Google Earth Engine and run
-          the recovery job to populate real results.
-        </div>
+        ${
+          recoveryReady &&
+          latestRecovery.recovery_tile_url
+
+            ? `
+
+              <div class="flood-detail-map-wrap">
+
+                <div id="recoveryDetailMap"></div>
+
+                <div class="flood-detail-legend">
+
+                  <strong>
+                    Vegetation Change
+                  </strong>
+
+                  <span>
+                    <i style="
+                      display:inline-block;
+                      width:12px;
+                      height:12px;
+                      border-radius:3px;
+                      background:#B71C1C;
+                    "></i>
+                    NDVI decrease
+                  </span>
+
+                  <span>
+                    <i style="
+                      display:inline-block;
+                      width:12px;
+                      height:12px;
+                      border-radius:3px;
+                      background:#FFF176;
+                    "></i>
+                    Little / no NDVI change
+                  </span>
+
+                  <span>
+                    <i style="
+                      display:inline-block;
+                      width:12px;
+                      height:12px;
+                      border-radius:3px;
+                      background:#1B5E20;
+                    "></i>
+                    NDVI increase
+                  </span>
+
+                  <small>
+                    Sentinel-2 vegetation-change indicator over
+                    ESA WorldCover cropland. Red indicates NDVI
+                    decrease and green indicates NDVI increase
+                    between the selected periods. This layer is
+                    experimental and scientific validation is pending.
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <div class="flood-method-grid">
+
+                <div class="flood-method-item">
+
+                  <span>
+                    Data source
+                  </span>
+
+                  <strong>
+                    Sentinel-2 SR
+                  </strong>
+
+                </div>
+
+
+                <div class="flood-method-item">
+
+                  <span>
+                    Cloud threshold
+                  </span>
+
+                  <strong>
+                    ${
+                      escapeHtml(
+                        String(
+                          latestRecovery.cloud_probability_max ?? 40
+                        )
+                      )
+                    }%
+                  </strong>
+
+                </div>
+
+
+                <div class="flood-method-item">
+
+                  <span>
+                    Baseline scenes
+                  </span>
+
+                  <strong>
+                    ${
+                      escapeHtml(
+                        String(
+                          latestRecovery.baseline_scenes
+                        )
+                      )
+                    }
+                  </strong>
+
+                </div>
+
+
+                <div class="flood-method-item">
+
+                  <span>
+                    Recovery scenes
+                  </span>
+
+                  <strong>
+                    ${
+                      escapeHtml(
+                        String(
+                          latestRecovery.recovery_scenes
+                        )
+                      )
+                    }
+                  </strong>
+
+                </div>
+
+              </div>
+
+
+              <div class="flood-validation-note">
+
+                <strong>
+                  Scientific status:
+                </strong>
+
+                This is an experimental Sentinel-2
+                vegetation-change indicator. NDVI change
+                alone does not prove crop damage or crop
+                recovery. Seasonal and crop-calendar
+                differences may also affect vegetation
+                conditions. Scientific validation is pending.
+
+              </div>
+
+            `
+
+            : `
+
+              <div class="report-note">
+
+                No Sentinel-2 vegetation recovery result
+                is loaded yet.
+
+                Return to the Dashboard and run the
+                recovery job first.
+
+              </div>
+
+            `
+        }
+
       `;
+
+
+      /*
+       * Separate Leaflet map for
+       * Sentinel-2 vegetation change.
+       */
+
+      if(
+        recoveryReady &&
+        latestRecovery.recovery_tile_url
+      ){
+
+        const recoveryDetailMap=
+          L.map(
+            'recoveryDetailMap',
+            {
+              zoomControl:true
+            }
+          )
+          .setView(
+            [lat,lon],
+            9
+          );
+
+
+        /*
+         * OpenStreetMap base layer
+         */
+
+        L.tileLayer(
+          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          {
+            attribution:
+              '© OpenStreetMap contributors',
+
+            maxZoom:19
+          }
+        ).addTo(
+          recoveryDetailMap
+        );
+
+
+        /*
+         * Sentinel-2 NDVI-change layer
+         */
+
+        const recoveryLayer=
+          L.tileLayer(
+            latestRecovery.recovery_tile_url,
+            {
+              opacity:0.75,
+
+              maxZoom:18,
+
+              attribution:
+                'Google Earth Engine / Copernicus Sentinel-2 / ESA WorldCover'
+            }
+          );
+
+
+        recoveryLayer.addTo(
+          recoveryDetailMap
+        );
+
+
+        /*
+         * Khairpur study point
+         */
+
+        L.circleMarker(
+          [lat,lon],
+          {
+            radius:6,
+            weight:2,
+            color:'#ffffff',
+            fillColor:'#17d07e',
+            fillOpacity:1
+          }
+        )
+        .addTo(
+          recoveryDetailMap
+        )
+        .bindPopup(
+          "Khairpur Mir's, Sindh"
+        );
+
+
+        /*
+         * Layer control
+         */
+
+        L.control.layers(
+          {},
+          {
+            'Sentinel-2 vegetation change':
+              recoveryLayer
+          },
+          {
+            collapsed:false
+          }
+        ).addTo(
+          recoveryDetailMap
+        );
+
+
+        /*
+         * Earth Engine tile error handling
+         */
+
+        recoveryLayer.on(
+          'tileerror',
+          ()=>{
+            console.warn(
+              'Earth Engine vegetation-change tile failed to load.'
+            );
+          }
+        );
+
+
+        /*
+         * Correct Leaflet map size
+         */
+
+        setTimeout(
+          ()=>{
+            recoveryDetailMap.invalidateSize();
+          },
+          150
+        );
+
+      }
 
     }
 

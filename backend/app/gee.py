@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+
 
 from .config import settings
 
@@ -241,21 +241,15 @@ def flood_summary(req):
         "experimental": True,
         "validation_status": "Validation pending",
     }
+
 def recovery_summary(req):
-    """Generate Sentinel-2 NDVI crop-recovery summary."""
+    """Generate experimental Sentinel-2 NDVI vegetation-recovery summary and map."""
 
     ee = _init()
     aoi = _study_area(ee)
 
-    sentinel2 = (
-        ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-        .filterBounds(aoi)
-    )
-
-    clouds = (
-        ee.ImageCollection("COPERNICUS/S2_CLOUD_PROBABILITY")
-        .filterBounds(aoi)
-    )
+    sentinel2 = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").filterBounds(aoi)
+    clouds = ee.ImageCollection("COPERNICUS/S2_CLOUD_PROBABILITY").filterBounds(aoi)
 
     join = ee.Join.saveFirst("cloud_mask").apply(
         primary=sentinel2,
@@ -266,30 +260,25 @@ def recovery_summary(req):
         ),
     )
 
+    joined = ee.ImageCollection(join).filter(ee.Filter.notNull(["cloud_mask"]))
+
     def ndvi(img):
-        cloud_probability = (
-            ee.Image(img.get("cloud_mask"))
-            .select("probability")
+        img = ee.Image(img)
+        cloud_probability = ee.Image(img.get("cloud_mask")).select("probability")
+        masked_img = img.updateMask(cloud_probability.lt(req.cloud_probability_max))
+        ndvi_image = masked_img.normalizedDifference(["B8", "B4"]).rename("NDVI")
+        return ndvi_image.copyProperties(
+            img,
+            ["system:time_start", "system:index"],
         )
 
-        img = ee.Image(img).updateMask(
-            cloud_probability.lt(
-                req.cloud_probability_max
-            )
-        )
+    ndvi_collection = joined.map(ndvi)
 
-        return img.normalizedDifference(
-            ["B8", "B4"]
-        ).rename("NDVI")
-
-    joined = ee.ImageCollection(join).map(ndvi)
-
-    baseline = joined.filterDate(
+    baseline = ndvi_collection.filterDate(
         str(req.baseline_start),
         str(req.baseline_end),
     )
-
-    recovery = joined.filterDate(
+    recovery = ndvi_collection.filterDate(
         str(req.recovery_start),
         str(req.recovery_end),
     )
@@ -300,8 +289,11 @@ def recovery_summary(req):
     if baseline_count == 0 or recovery_count == 0:
         return {
             "status": "empty",
+            "district": "Khairpur District",
             "baseline_scenes": baseline_count,
             "recovery_scenes": recovery_count,
+            "experimental": True,
+            "validation_status": "Validation pending",
         }
 
     cropland = (
@@ -309,6 +301,7 @@ def recovery_summary(req):
         .first()
         .select("Map")
         .eq(40)
+        .clip(aoi)
     )
 
     def mean_ndvi(image):
@@ -324,21 +317,26 @@ def recovery_summary(req):
             .get("NDVI")
         )
 
-    baseline_ndvi = mean_ndvi(
-        baseline.median()
+    baseline_composite = baseline.median().clip(aoi)
+    recovery_composite = recovery.median().clip(aoi)
+
+    ndvi_change_image = (
+        recovery_composite
+        .subtract(baseline_composite)
+        .rename("NDVI_change")
+        .updateMask(cropland)
+        .clip(aoi)
     )
 
-    recovery_ndvi = mean_ndvi(
-        recovery.median()
-    )
+    recovery_map = ndvi_change_image.getMapId({
+        "min": -0.3,
+        "max": 0.3,
+        "palette": ["B71C1C", "F57C00", "FFF176", "81C784", "1B5E20"],
+    })
+    recovery_tile_url = recovery_map["tile_fetcher"].url_format
 
-    baseline_value = ee.Number(
-        baseline_ndvi
-    ).getInfo()
-
-    recovery_value = ee.Number(
-        recovery_ndvi
-    ).getInfo()
+    baseline_value = ee.Number(mean_ndvi(baseline_composite)).getInfo()
+    recovery_value = ee.Number(mean_ndvi(recovery_composite)).getInfo()
 
     return {
         "status": "ok",
@@ -346,11 +344,15 @@ def recovery_summary(req):
         "baseline_ndvi": baseline_value,
         "recovery_ndvi": recovery_value,
         "ndvi_change": recovery_value - baseline_value,
+        "recovery_tile_url": recovery_tile_url,
         "baseline_scenes": baseline_count,
         "recovery_scenes": recovery_count,
-        "data_source": "Sentinel-2",
+        "data_source": "Sentinel-2 SR Harmonized",
+        "cloud_probability_max": req.cloud_probability_max,
         "note": (
-            "Vegetation recovery indicator only; "
-            "not a crop-disease diagnosis."
+            "Experimental vegetation-change indicator only; "
+            "not a crop-disease or definitive crop-recovery diagnosis."
         ),
+        "experimental": True,
+        "validation_status": "Validation pending",
     }
